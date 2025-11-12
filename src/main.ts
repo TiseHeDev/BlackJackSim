@@ -1,3 +1,5 @@
+// --- Fonctions de décision principales ---
+
 function getBlackjackDecision(hand: (string | number)[], dealer: string | number): string {
   let dealerValue = 0;
   if (dealer === "J" || dealer === "Q" || dealer === "K") dealerValue = 10;
@@ -68,8 +70,9 @@ function pairDecision(card: string | number, dealer: number): string {
   return "Tirer";
 }
 
-// === Gestion des cartes ===
-let cartesTab: (string | number)[] = [2, 3, 4, 5, 6, 7, 8, 9, 10, "J", "Q", "K", "A"];
+// --- Gestion des cartes ---
+
+const cartesTab: (string | number)[] = [2, 3, 4, 5, 6, 7, 8, 9, 10, "J", "Q", "K", "A"];
 
 function returnRandomCard(): string | number {
   return cartesTab[Math.floor(Math.random() * cartesTab.length)];
@@ -92,94 +95,119 @@ function calculateTotal(hand: (string | number)[]): number {
   return total;
 }
 
-// === Simulation de la partie avec Split et conclusion finale ===
-let playerHand: (string | number)[] = [returnRandomCard(), returnRandomCard()];
-let dealerHand: (string | number)[] = [returnRandomCard()]; // carte visible du croupier
+// --- Détection du blackjack ---
 
-console.log(`Cartes du joueur : ${playerHand.join(", ")}`);
-console.log(`Carte visible du croupier : ${dealerHand[0]}`);
+function estBlackjack(hand: (string | number)[]): boolean {
+  return hand.length === 2 && calculateTotal(hand) === 21;
+}
 
-// Fonction pour jouer une main
+// --- Fonction pour jouer une main ---
+
 function jouerMain(hand: (string | number)[], dealerCard: string | number, isSplitAce: boolean = false): number {
   let decision: string;
-
   do {
     decision = getBlackjackDecision(hand, dealerCard);
-    console.log(`Décision => ${decision} (Main : ${hand.join(", ")} | Total = ${calculateTotal(hand)})`);
-
     if (decision === "Tirer") {
       const newCard = returnRandomCard();
       hand.push(newCard);
-      console.log(`Nouvelle carte tirée : ${newCard}`);
     }
-
-    if (calculateTotal(hand) > 21) {
-      console.log("Le joueur dépasse 21, c'est PERDU !");
-      break;
-    }
-
+    if (calculateTotal(hand) > 21) break;
     if (isSplitAce) break; // Split As : une seule carte
-
   } while (decision === "Tirer");
-
   return calculateTotal(hand);
 }
 
-// --- Gestion du Split ---
-let playerTotals: number[] = [];
+// --- Simulation d'une partie complète ---
 
-if (playerHand[0] === playerHand[1]) {
-  const card = playerHand[0];
-  const decisionSplit = pairDecision(card, dealerHand[0]);
-  if (decisionSplit === "Split") {
-    console.log("Le joueur fait un Split !");
-    if (card === "A") {
-      const main1 = [card, returnRandomCard()];
-      const main2 = [card, returnRandomCard()];
-      console.log("Main 1 :", main1.join(", "));
-      playerTotals.push(jouerMain(main1, dealerHand[0], true));
-      console.log("Main 2 :", main2.join(", "));
-      playerTotals.push(jouerMain(main2, dealerHand[0], true));
-    } else {
-      const main1 = [card, returnRandomCard()];
-      const main2 = [card, returnRandomCard()];
-      console.log("Main 1 :", main1.join(", "));
-      playerTotals.push(jouerMain(main1, dealerHand[0]));
-      console.log("Main 2 :", main2.join(", "));
-      playerTotals.push(jouerMain(main2, dealerHand[0]));
+function jouerPartie(): {
+  resultat: "Victoire" | "Défaite" | "Nulle";
+  joueur: (string | number)[];
+  croupier: (string | number)[];
+  blackjackJoueur: boolean;
+  blackjackCroupier: boolean;
+} {
+  let playerHand: (string | number)[] = [returnRandomCard(), returnRandomCard()];
+  let dealerHand: (string | number)[] = [returnRandomCard(), returnRandomCard()];
+
+  const blackjackJoueur = estBlackjack(playerHand);
+  const blackjackCroupier = estBlackjack(dealerHand);
+
+  // Si blackjack direct
+  if (blackjackJoueur && blackjackCroupier) {
+    return { resultat: "Nulle", joueur: playerHand, croupier: dealerHand, blackjackJoueur, blackjackCroupier };
+  } else if (blackjackJoueur) {
+    return { resultat: "Victoire", joueur: playerHand, croupier: dealerHand, blackjackJoueur, blackjackCroupier };
+  } else if (blackjackCroupier) {
+    return { resultat: "Défaite", joueur: playerHand, croupier: dealerHand, blackjackJoueur, blackjackCroupier };
+  }
+
+  // Sinon on joue normalement
+  const totalJoueur = jouerMain(playerHand, dealerHand[0]);
+  while (calculateTotal(dealerHand) < 17) dealerHand.push(returnRandomCard());
+
+  const totalCroupier = calculateTotal(dealerHand);
+  let resultat: "Victoire" | "Défaite" | "Nulle";
+  if (totalJoueur > 21) resultat = "Défaite";
+  else if (totalCroupier > 21) resultat = "Victoire";
+  else if (totalJoueur > totalCroupier) resultat = "Victoire";
+  else if (totalJoueur < totalCroupier) resultat = "Défaite";
+  else resultat = "Nulle";
+
+  return { resultat, joueur: playerHand, croupier: dealerHand, blackjackJoueur, blackjackCroupier };
+}
+
+// --- Système de mise progressif + affichage détaillé ---
+
+function simulationSystemeMise() {
+  let solde = 100;
+  const miseInitiale = 10;
+  let mise = miseInitiale;
+  let niveau = 1;
+  let sequencesReussies = 0;
+  const NbPartiesSimule = 100;
+
+  console.log("\n=== Début de la simulation Blackjack ===\n");
+
+  for (let i = 1; i <= NbPartiesSimule; i++) {
+    if (solde < mise) {
+      console.log("💸 Plus assez d’argent pour continuer.");
+      break;
     }
-  } else {
-    playerTotals.push(jouerMain(playerHand, dealerHand[0]));
+
+    const { resultat, joueur, croupier, blackjackJoueur, blackjackCroupier } = jouerPartie();
+
+    // Gestion des gains/pertes
+    if (resultat === "Victoire") {
+      solde += mise * 2;
+      if (niveau === 1) {
+        niveau = 2;
+        mise = miseInitiale * 2;
+      } else if (niveau === 2) {
+        niveau = 3;
+        mise = miseInitiale * 3;
+        sequencesReussies++;
+        niveau = 1;
+        mise = miseInitiale;
+      }
+    } else if (resultat === "Nulle") {
+      // mise inchangée
+    } else {
+      solde -= mise;
+      niveau = 1;
+      mise = miseInitiale;
+    }
+
+    // --- Affichage détaillé de la partie ---
+    console.log(`🎲 Partie ${i}`);
+    console.log(`  🧑 Joueur : [${joueur.join(", ")}] ${blackjackJoueur ? "(Blackjack !)" : ""}`);
+    console.log(`  🏦 Croupier : [${croupier.join(", ")}] ${blackjackCroupier ? "(Blackjack !)" : ""}`);
+    console.log(`  ➤ Résultat : ${resultat}`);
+    console.log(`  💰 Mise : ${mise} | Solde actuel : ${solde}\n`);
   }
-} else {
-  playerTotals.push(jouerMain(playerHand, dealerHand[0]));
+
+  console.log("\n--- Résumé final ---");
+  console.log(`💵 Solde final : ${solde}`);
+  console.log(`🏆 Séquences réussies (3x la mise atteinte) : ${sequencesReussies}`);
 }
 
-// --- Tour du croupier ---
-dealerHand.push(returnRandomCard()); // carte cachée du croupier
-console.log(`Cartes complètes du croupier : ${dealerHand.join(", ")}`);
-
-while (calculateTotal(dealerHand) < 17) {
-  const newCard = returnRandomCard();
-  dealerHand.push(newCard);
-  console.log(`Croupier tire : ${newCard} (Total = ${calculateTotal(dealerHand)})`);
-}
-
-const dealerTotal = calculateTotal(dealerHand);
-console.log(`\nTotal croupier = ${dealerTotal}`);
-
-// --- Conclusion pour chaque main ---
-playerTotals.forEach((total, index) => {
-  console.log(`\nMain ${index + 1} : Total joueur = ${total}`);
-  if (total > 21) {
-    console.log("Résultat : PERDU");
-  } else if (dealerTotal > 21) {
-    console.log("Résultat : GAGNÉ");
-  } else if (total > dealerTotal) {
-    console.log("Résultat : GAGNÉ");
-  } else if (total < dealerTotal) {
-    console.log("Résultat : PERDU");
-  } else {
-    console.log("Résultat : ÉGALITÉ");
-  }
-});
+simulationSystemeMise();
