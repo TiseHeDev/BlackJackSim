@@ -250,7 +250,7 @@ function simulationBlackjack() {
     console.log(`💵 Solde final : ${solde}`);
     console.log(`🏆 Séquences réussies (3x la mise atteinte) : ${sequencesReussies}`);
   } else {
-    console.log("❌ Choix invalide, veuillez relancer le programme.");
+    console.log("❌ Choix invalide");
   }
 }
 
