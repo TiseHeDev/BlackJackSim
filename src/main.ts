@@ -1,3 +1,6 @@
+// === Projet Blackjack complet avec détection de Blackjack ===
+// === nom-prenom-projet-blackjack.ts ===
+
 // --- Fonctions de décision principales ---
 
 function getBlackjackDecision(hand: (string | number)[], dealer: string | number): string {
@@ -156,58 +159,99 @@ function jouerPartie(): {
   return { resultat, joueur: playerHand, croupier: dealerHand, blackjackJoueur, blackjackCroupier };
 }
 
-// --- Système de mise progressif + affichage détaillé ---
+// --- Simulation du Blackjack avec choix du mode de mise ---
 
-function simulationSystemeMise() {
-  let solde = 100;
-  const miseInitiale = 10;
-  let mise = miseInitiale;
-  let niveau = 1;
-  let sequencesReussies = 0;
-  const NbPartiesSimule = 100;
+import * as readlineSync from "readline-sync";
 
-  console.log("\n=== Début de la simulation Blackjack ===\n");
+function simulationBlackjack() {
+  console.log("=== Simulation Blackjack ===\n");
+  console.log("Choisissez le mode de mise :");
+  console.log("1 - Mise constante");
+  console.log("2 - Mise progressive");
+  let choix: string = readlineSync.question("Entrez votre choix (1 ou 2) : ");
 
-  for (let i = 1; i <= NbPartiesSimule; i++) {
-    if (solde < mise) {
-      console.log("💸 Plus assez d’argent pour continuer.");
-      break;
+  if (choix === "1") {
+    // --- Mise constante ---
+    const soldeInitial = 100;
+    const miseConstante = 10;
+    let solde = soldeInitial;
+    const NbPartiesSimule = 100;
+
+    for (let i = 1; i <= NbPartiesSimule; i++) {
+      if (solde < miseConstante) {
+        console.log("💸 Plus assez d’argent pour continuer.");
+        break;
+      }
+
+      const { resultat, joueur, croupier, blackjackJoueur, blackjackCroupier } = jouerPartie();
+
+      // Gestion du solde
+      if (resultat === "Victoire") solde += miseConstante;
+      else if (resultat === "Défaite") solde -= miseConstante;
+      // Nulle : solde inchangé
+
+      // Affichage détaillé
+      console.log(`🎲 Partie ${i}`);
+      console.log(`  🧑 Joueur : [${joueur.join(", ")}] ${blackjackJoueur ? "(Blackjack !)" : ""}`);
+      console.log(`  🏦 Croupier : [${croupier.join(", ")}] ${blackjackCroupier ? "(Blackjack !)" : ""}`);
+      console.log(`  ➤ Résultat : ${resultat}`);
+      console.log(`  💰 Mise : ${miseConstante} | Solde actuel : ${solde}\n`);
     }
 
-    const { resultat, joueur, croupier, blackjackJoueur, blackjackCroupier } = jouerPartie();
+    console.log("\n--- Résumé final ---");
+    console.log(`💵 Solde final : ${solde}`);
+  } else if (choix === "2") {
+    // --- Mise progressive ---
+    let solde = 100;
+    const miseInitiale = 10;
+    let mise = miseInitiale;
+    let niveau = 1;
+    let sequencesReussies = 0;
+    const NbPartiesSimule = 100;
 
-    // Gestion des gains/pertes
-    if (resultat === "Victoire") {
-      solde += mise * 2;
-      if (niveau === 1) {
-        niveau = 2;
-        mise = miseInitiale * 2;
-      } else if (niveau === 2) {
-        niveau = 3;
-        mise = miseInitiale * 3;
-        sequencesReussies++;
+    console.log("\n=== Début de la simulation Blackjack (mise progressive) ===\n");
+
+    for (let i = 1; i <= NbPartiesSimule; i++) {
+      if (solde < mise) {
+        console.log("💸 Plus assez d’argent pour continuer.");
+        break;
+      }
+
+      const { resultat, joueur, croupier, blackjackJoueur, blackjackCroupier } = jouerPartie();
+
+      if (resultat === "Victoire") {
+        solde += mise * 2;
+        if (niveau === 1) {
+          niveau = 2;
+          mise = miseInitiale * 2;
+        } else if (niveau === 2) {
+          niveau = 3;
+          mise = miseInitiale * 3;
+          sequencesReussies++;
+          niveau = 1;
+          mise = miseInitiale;
+        }
+      } else if (resultat === "Nulle") {
+        // mise inchangée
+      } else {
+        solde -= mise;
         niveau = 1;
         mise = miseInitiale;
       }
-    } else if (resultat === "Nulle") {
-      // mise inchangée
-    } else {
-      solde -= mise;
-      niveau = 1;
-      mise = miseInitiale;
+
+      console.log(`🎲 Partie ${i}`);
+      console.log(`  🧑 Joueur : [${joueur.join(", ")}] ${blackjackJoueur ? "(Blackjack !)" : ""}`);
+      console.log(`  🏦 Croupier : [${croupier.join(", ")}] ${blackjackCroupier ? "(Blackjack !)" : ""}`);
+      console.log(`  ➤ Résultat : ${resultat}`);
+      console.log(`  💰 Mise : ${mise} | Solde actuel : ${solde}\n`);
     }
 
-    // --- Affichage détaillé de la partie ---
-    console.log(`🎲 Partie ${i}`);
-    console.log(`  🧑 Joueur : [${joueur.join(", ")}] ${blackjackJoueur ? "(Blackjack !)" : ""}`);
-    console.log(`  🏦 Croupier : [${croupier.join(", ")}] ${blackjackCroupier ? "(Blackjack !)" : ""}`);
-    console.log(`  ➤ Résultat : ${resultat}`);
-    console.log(`  💰 Mise : ${mise} | Solde actuel : ${solde}\n`);
+    console.log("\n--- Résumé final ---");
+    console.log(`💵 Solde final : ${solde}`);
+    console.log(`🏆 Séquences réussies (3x la mise atteinte) : ${sequencesReussies}`);
+  } else {
+    console.log("❌ Choix invalide, veuillez relancer le programme.");
   }
-
-  console.log("\n--- Résumé final ---");
-  console.log(`💵 Solde final : ${solde}`);
-  console.log(`🏆 Séquences réussies (3x la mise atteinte) : ${sequencesReussies}`);
 }
 
-simulationSystemeMise();
+simulationBlackjack();
