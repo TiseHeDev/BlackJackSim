@@ -172,12 +172,13 @@ function simulationBlackjack() {
 
   if (choix === "1") {
     // --- Mise constante ---
-    const soldeInitial = 100;
+    const soldeInitial = 500;
     const miseConstante = 10;
     let solde = soldeInitial;
     const NbPartiesSimule = 100;
 
     for (let i = 1; i <= NbPartiesSimule; i++) {
+
       if (solde < miseConstante) {
         console.log("💸 Plus assez d’argent pour continuer.");
         break;
@@ -228,8 +229,7 @@ function simulationBlackjack() {
           niveau = 3;
           mise = miseInitiale * 3;
           sequencesReussies++;
-          niveau = 1;
-          mise = miseInitiale;
+
         }
       } else if (resultat === "Nulle") {
         // mise inchangée
